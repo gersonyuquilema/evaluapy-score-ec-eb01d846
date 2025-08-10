@@ -8,6 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* EvaluaPYME Professional Color Palette */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -17,26 +18,46 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Financial Blue - Professional and trustworthy */
+    --primary: 215 87% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 215 87% 65%;
+    --primary-dark: 215 87% 45%;
 
-    --secondary: 210 40% 96.1%;
+    /* Professional Gray */
+    --secondary: 217 12% 84%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 215 87% 55%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Risk Colors for Scoring */
+    --success: 142 69% 58%; /* Green for low risk */
+    --success-foreground: 0 0% 100%;
+    --warning: 43 96% 56%; /* Yellow for medium risk */
+    --warning-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84% 60%; /* Red for high risk */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 215 87% 55%;
 
-    --radius: 0.5rem;
+    /* Professional Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(215 87% 55%), hsl(215 87% 45%));
+    --gradient-success: linear-gradient(135deg, hsl(142 69% 58%), hsl(142 69% 48%));
+    --gradient-warning: linear-gradient(135deg, hsl(43 96% 56%), hsl(43 96% 46%));
+    --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 50%));
+    
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -2px hsl(215 87% 55% / 0.1);
+    --shadow-medium: 0 8px 30px -4px hsl(215 87% 55% / 0.15);
+    --shadow-strong: 0 12px 40px -6px hsl(215 87% 55% / 0.2);
+
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
