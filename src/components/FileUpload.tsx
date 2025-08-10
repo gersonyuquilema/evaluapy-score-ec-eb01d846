@@ -3,9 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, File, X, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabaseClient";
 
 interface FileUploadProps {
   onFilesUploaded: (files: File[]) => void;
+  nombreEmpresa: string; // <-- Agrega esto
   acceptedTypes?: string[];
   maxFiles?: number;
   className?: string;
@@ -13,6 +15,7 @@ interface FileUploadProps {
 
 const FileUpload = ({ 
   onFilesUploaded, 
+  nombreEmpresa,
   acceptedTypes = ['.csv', '.txt', '.pdf', '.xlsx', '.xls'],
   maxFiles = 5,
   className = "" 
@@ -88,6 +91,44 @@ const FileUpload = ({
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  async function subirArchivoAlBucket(nombreEmpresa: string, archivo: File) {
+    const ruta = `${nombreEmpresa}/${archivo.name}`;
+    const { data, error } = await supabase.storage
+      .from("documentos")
+      .upload(ruta, archivo);
+
+    if (error) throw error;
+    return data?.path;
+  }
+
+  const handleProcesarArchivos = async () => {
+    if (uploadedFiles.length === 0) return;
+    try {
+      if (!nombreEmpresa) {
+        toast({
+          title: "Error",
+          description: "No se ha definido el nombre de la empresa.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      for (const archivo of uploadedFiles) {
+        await subirArchivoAlBucket(nombreEmpresa, archivo); // <-- Usa el nombre de la empresa
+      }
+      toast({
+        title: "Archivos subidos",
+        description: "Todos los archivos fueron subidos al bucket de Supabase.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error al subir archivos",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -168,7 +209,11 @@ const FileUpload = ({
         )}
 
         {uploadedFiles.length > 0 && (
-          <Button className="w-full bg-gradient-primary hover:opacity-90">
+          <Button
+            className="w-full bg-gradient-primary hover:opacity-90"
+            onClick={handleProcesarArchivos}
+            disabled={!nombreEmpresa}
+          >
             Procesar Documentos ({uploadedFiles.length})
           </Button>
         )}
@@ -178,3 +223,9 @@ const FileUpload = ({
 };
 
 export default FileUpload;
+
+/* Uso del componente FileUpload
+<FileUpload
+  nombreEmpresa={empresa.nombre} // Asegúrate que empresa.nombre tenga valor
+  onFilesUploaded={...}
+/> */

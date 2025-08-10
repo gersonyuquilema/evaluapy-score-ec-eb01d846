@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import FileUpload from "./FileUpload";
+import FileUpload from "@/components/FileUpload";
 import RiskMeter from "./RiskMeter";
 import { Building2, Globe, Upload, BarChart3, CheckCircle, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const EvaluationFlow = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -20,6 +22,7 @@ const EvaluationFlow = () => {
   });
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState<number | null>(null);
+  const [showDashboard, setShowDashboard] = useState(false);
   const { toast } = useToast();
 
   const steps = [
@@ -65,6 +68,152 @@ const EvaluationFlow = () => {
       title: "Evaluación Completada",
       description: `Score generado: ${finalScore}/100`,
     });
+  };
+
+  const handleDescargarReporte = () => {
+    const doc = new jsPDF();
+
+    // Colores y estilos
+    const azul = "#1a237e";
+    const gris = "#f5f5f5";
+    const naranja = "#ff9800";
+    const verde = "#43a047";
+    const amarillo = "#fbc02d";
+
+    // Encabezado
+    doc.setFillColor(26, 35, 126); // azul
+    doc.rect(0, 0, 210, 30, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.text(formData.companyName || "Mi Empresa PYME", 12, 18);
+    doc.setFontSize(10);
+    doc.text("Reporte de Evaluación Crediticia", 12, 25);
+
+    // Datos principales
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.text(`RUC: ${formData.ruc || "No especificado"}`, 12, 38);
+    doc.text(`Industria: ${formData.industry || "No especificado"}`, 12, 46);
+    doc.text(`Red Social: ${formData.socialMedia || "No especificado"}`, 12, 54);
+
+    // Score y riesgo
+    const score = evaluationResult ?? 0;
+    const riesgo = score >= 80 ? "BAJO" : score >= 60 ? "MEDIO" : "ALTO";
+    const colorRiesgo = score >= 80 ? verde : score >= 60 ? amarillo : naranja;
+
+    // Score visual
+    doc.setDrawColor(colorRiesgo);
+    doc.setLineWidth(1.5);
+    doc.circle(180, 45, 18, "S");
+    doc.setFontSize(22);
+    doc.setTextColor(colorRiesgo);
+    doc.text(`${score}`, 180, 50, { align: "center" });
+    doc.setFontSize(10);
+    doc.text("SCORE", 180, 58, { align: "center" });
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+
+    // Riesgo
+    doc.setFontSize(14);
+    doc.setTextColor(colorRiesgo);
+    doc.text(`RIESGO ${riesgo}`, 12, 70);
+    doc.setTextColor(0, 0, 0);
+
+    // Indicadores principales (como tarjetas)
+    autoTable(doc, {
+      startY: 78,
+      theme: "plain",
+      styles: { fontSize: 11, cellPadding: 3 },
+      body: [
+        [
+          { content: "Ventas Mensuales", styles: { fillColor: gris } },
+          { content: "$45,230", styles: { textColor: azul, fontStyle: "bold" } },
+          { content: "Liquidez", styles: { fillColor: gris } },
+          { content: "68%", styles: { textColor: azul, fontStyle: "bold" } },
+        ],
+        [
+          { content: "Clientes Activos", styles: { fillColor: gris } },
+          { content: "156", styles: { textColor: azul, fontStyle: "bold" } },
+          { content: "Reputación Digital", styles: { fillColor: gris } },
+          { content: "79/100", styles: { textColor: azul, fontStyle: "bold" } },
+        ],
+      ],
+      columnStyles: {
+        0: { cellWidth: 40 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 35 },
+      },
+    });
+
+    // Indicadores Financieros (barras)
+    let y = (doc as any).lastAutoTable?.finalY
+      ? (doc as any).lastAutoTable.finalY + 10
+      : 100;
+    doc.setFontSize(12);
+    doc.text("Indicadores Financieros", 12, y);
+    y += 6;
+
+    const indicadores = [
+      { nombre: "Ventas", valor: 85 },
+      { nombre: "Liquidez", valor: 68 },
+      { nombre: "Rentabilidad", valor: 71 },
+      { nombre: "Reputación Digital", valor: 79 },
+    ];
+
+    indicadores.forEach((ind, i) => {
+      doc.setFontSize(10);
+      doc.text(`${ind.nombre}: ${ind.valor}%`, 15, y + i * 8);
+      // Barra
+      doc.setFillColor(azul);
+      doc.rect(45, y - 3 + i * 8, ind.valor * 1.2, 5, "F");
+      doc.setFillColor(gris);
+      doc.rect(45 + ind.valor * 1.2, y - 3 + i * 8, (100 - ind.valor) * 1.2, 5, "F");
+    });
+
+    // Recomendación de crédito
+    y += indicadores.length * 8 + 8;
+    doc.setFontSize(12);
+    doc.text("Recomendación de Crédito", 12, y);
+    doc.setFontSize(14);
+    doc.setTextColor(azul);
+    doc.text("$25,000", 70, y);
+    doc.setFontSize(10);
+    doc.setTextColor(naranja);
+    doc.text([
+      "⚠️ Requiere Revisión:",
+      "Se requiere análisis adicional para determinar elegibilidad."
+    ], 12, y + 8);
+    doc.setTextColor(0, 0, 0);
+
+    // Simulador
+    y += 20;
+    doc.setFontSize(12);
+    doc.text('Simulador "¿Qué pasaría si...?"', 12, y);
+    doc.setFontSize(10);
+    doc.text(`Si aumenta ventas 20%: ${score + 6} (+6)`, 15, y + 8);
+    doc.text(`Si mejora reputación digital: ${score + 3} (+3)`, 15, y + 16);
+    doc.text(`Si reduce deudas 30%: ${score + 8} (+8)`, 15, y + 24);
+
+    // Documentos cargados
+    y += 34;
+    doc.setFontSize(12);
+    doc.text("Documentos Financieros Cargados:", 12, y);
+    doc.setFontSize(10);
+    if (formData.files.length > 0) {
+      formData.files.forEach((file, idx) => {
+        doc.text(`• ${file.name}`, 15, y + 8 + idx * 6);
+      });
+    } else {
+      doc.text("No se han subido documentos.", 15, y + 8);
+    }
+
+    // Pie de página
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text("Reporte generado automáticamente por Evaluapy", 12, 290);
+
+    doc.save(`reporte_${formData.companyName || "empresa"}.pdf`);
   };
 
   const renderStepContent = () => {
@@ -125,6 +274,7 @@ const EvaluationFlow = () => {
             </div>
             
             <FileUpload 
+              nombreEmpresa={formData.companyName}
               onFilesUploaded={(files) => setFormData({...formData, files})}
               maxFiles={10}
             />
@@ -255,10 +405,17 @@ const EvaluationFlow = () => {
               <div className="text-center space-y-6">
                 <RiskMeter score={evaluationResult} size="lg" />
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                  <Button 
+                    variant="outline" 
+                    className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    onClick={() => setShowDashboard(true)}
+                  >
                     Ver Dashboard Completo
                   </Button>
-                  <Button className="bg-gradient-primary hover:opacity-90">
+                  <Button 
+                    className="bg-gradient-primary hover:opacity-90"
+                    onClick={handleDescargarReporte}
+                  >
                     Descargar Reporte
                   </Button>
                 </div>
@@ -271,6 +428,131 @@ const EvaluationFlow = () => {
         return null;
     }
   };
+
+  if (showDashboard) {
+    // Simulaciones de datos para los indicadores (puedes ajustar según tu lógica real)
+    const ventas = 45230;
+    const liquidez = 68;
+    const rentabilidad = 71;
+    const reputacionDigital = 79;
+    const clientesActivos = 156;
+    const variacionVentas = 12.5;
+    const variacionClientes = 8.1;
+    const variacionLiquidez = -3.2;
+    const variacionReputacion = 5.3;
+    const montoCredito = "$25,000";
+
+    // Score y riesgo
+    const score = evaluationResult ?? 0;
+    const riesgo = score >= 80 ? "Bajo" : score >= 60 ? "Medio" : "Alto";
+    const colorRiesgo = score >= 80 ? "#22c55e" : score >= 60 ? "#eab308" : "#ef4444";
+    const textoRiesgo = score >= 80 ? "Bajo Riesgo" : score >= 60 ? "Riesgo Medio" : "Riesgo Alto";
+
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        <h2 className="text-2xl font-bold mb-1">{formData.companyName || "Mi Empresa PYME"}</h2>
+        <p className="text-muted-foreground mb-6">Dashboard de Evaluación Crediticia</p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {/* Score principal */}
+          <div className="col-span-1 flex flex-col items-center justify-center bg-yellow-50 rounded-lg p-6">
+            <svg width="120" height="120">
+              <circle cx="60" cy="60" r="50" stroke="#f3f4f6" strokeWidth="12" fill="none" />
+              <circle
+                cx="60"
+                cy="60"
+                r="50"
+                stroke={colorRiesgo}
+                strokeWidth="12"
+                fill="none"
+                strokeDasharray={314}
+                strokeDashoffset={314 - (score / 100) * 314}
+                strokeLinecap="round"
+                style={{ transition: "stroke-dashoffset 0.5s" }}
+              />
+              <text x="60" y="70" textAnchor="middle" fontSize="32" fill={colorRiesgo} fontWeight="bold">
+                {score}
+              </text>
+            </svg>
+            <div className="mt-2 text-lg font-semibold">{textoRiesgo}</div>
+            <div className="text-xs text-muted-foreground">Puntaje de Riesgo Crediticio</div>
+          </div>
+          {/* Indicadores */}
+          <div className="col-span-1 bg-white rounded-lg p-4 flex flex-col justify-between shadow-sm">
+            <div className="flex items-center text-blue-600 font-bold text-xl">${ventas.toLocaleString()}</div>
+            <div className="text-xs text-muted-foreground">Ventas Mensuales</div>
+            <div className="text-green-500 text-xs mt-1">{variacionVentas > 0 ? `▲ +${variacionVentas}%` : `▼ ${variacionVentas}%`}</div>
+          </div>
+          <div className="col-span-1 bg-white rounded-lg p-4 flex flex-col justify-between shadow-sm">
+            <div className="flex items-center font-bold text-xl">{liquidez}%</div>
+            <div className="text-xs text-muted-foreground">Liquidez</div>
+            <div className={`${variacionLiquidez > 0 ? "text-green-500" : "text-red-500"} text-xs mt-1`}>
+              {variacionLiquidez > 0 ? `▲ +${variacionLiquidez}%` : `▼ ${Math.abs(variacionLiquidez)}%`}
+            </div>
+          </div>
+          <div className="col-span-1 bg-white rounded-lg p-4 flex flex-col justify-between shadow-sm">
+            <div className="flex items-center font-bold text-xl">{clientesActivos}</div>
+            <div className="text-xs text-muted-foreground">Clientes Activos</div>
+            <div className="text-green-500 text-xs mt-1">{variacionClientes > 0 ? `▲ +${variacionClientes}%` : `▼ ${variacionClientes}%`}</div>
+          </div>
+        </div>
+        {/* Indicadores Financieros */}
+        <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
+          <h4 className="font-semibold mb-4">Indicadores Financieros</h4>
+          <div className="grid grid-cols-4 gap-4">
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Ventas</div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: "85%" }} />
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Liquidez</div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${liquidez}%` }} />
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Rentabilidad</div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${rentabilidad}%` }} />
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Reputación Digital</div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${reputacionDigital}%` }} />
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Recomendación de crédito y simulador */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <h4 className="font-semibold mb-2">Recomendación de Crédito</h4>
+            <div className="text-2xl font-bold text-blue-700 mb-2">{montoCredito}</div>
+            <div className="bg-yellow-100 text-yellow-800 rounded p-2 text-xs flex items-center">
+              ⚠️ Requiere Revisión: Se requiere análisis adicional para determinar elegibilidad.
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <h4 className="font-semibold mb-2">Simulador "¿Qué pasaría si...?"</h4>
+            <ul className="text-sm space-y-2">
+              <li>
+                Si aumenta ventas 20%: <span className="font-bold text-green-600">{score + 6} (+6)</span>
+              </li>
+              <li>
+                Si mejora reputación digital: <span className="font-bold text-green-600">{score + 3} (+3)</span>
+              </li>
+              <li>
+                Si reduce deudas 30%: <span className="font-bold text-green-600">{score + 8} (+8)</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <Button onClick={() => setShowDashboard(false)}>Volver</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">

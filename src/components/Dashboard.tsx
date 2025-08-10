@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import RiskMeter from "./RiskMeter";
 import { TrendingUp, TrendingDown, AlertCircle, CheckCircle, DollarSign, Users, BarChart3, Shield } from "lucide-react";
+import { useRef } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 interface DashboardProps {
   companyName?: string;
@@ -63,15 +66,48 @@ const Dashboard = ({
     }
   ];
 
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const reportBtnRef = useRef<HTMLButtonElement>(null);
+  const riskMeterRef = useRef<HTMLDivElement>(null); // <--- agrega este ref
+
+  const handleGenerateReport = async () => {
+    if (!dashboardRef.current) return;
+    // Oculta el botón antes de capturar
+    if (reportBtnRef.current) {
+      reportBtnRef.current.style.display = "none";
+    }
+    // Asegura que todo esté visible y renderizado
+    window.scrollTo(0, 0);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    // Captura el dashboard como imagen con mayor escala
+    const canvas = await html2canvas(dashboardRef.current, { scale: 3, useCORS: true, backgroundColor: "#fff" });
+    const imgData = canvas.toDataURL("image/png");
+    // Muestra el botón de nuevo
+    if (reportBtnRef.current) {
+      reportBtnRef.current.style.display = "";
+    }
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "px",
+      format: [canvas.width, canvas.height]
+    });
+    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+    pdf.save("reporte_crediticio.pdf");
+  };
+
   return (
-    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+    <div ref={dashboardRef} className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{companyName}</h1>
           <p className="text-muted-foreground">Dashboard de Evaluación Crediticia</p>
         </div>
-        <Button className="bg-gradient-primary hover:opacity-90">
+        <Button
+          ref={reportBtnRef}
+          className="bg-gradient-primary hover:opacity-90"
+          onClick={handleGenerateReport}
+        >
           Generar Reporte
         </Button>
       </div>
@@ -79,7 +115,7 @@ const Dashboard = ({
       {/* Main Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Risk Score - Main */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1" ref={riskMeterRef}>
           <RiskMeter score={riskScore} size="lg" className="h-fit" />
         </div>
 

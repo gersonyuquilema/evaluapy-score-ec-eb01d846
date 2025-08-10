@@ -35,7 +35,7 @@ const Hero = () => {
             Iniciar Sesión
           </Button>
           <Button className="bg-gradient-primary hover:opacity-90 shadow-medium">
-            Evaluar Ahora
+            Soporte
           </Button>
         </nav>
       </header>
@@ -48,7 +48,7 @@ const Hero = () => {
             <div className="space-y-4">
               <h2 className="text-5xl lg:text-6xl font-bold leading-tight">
                 Evaluación de
-                <span className="bg-gradient-primary bg-clip-text text-transparent block">
+                <span className="bg-gradient-primary bg-clip-text text-transparent block leading-[1.4]">
                   Riesgo Crediticio
                 </span>
                 en Tiempo Real
@@ -59,7 +59,7 @@ const Hero = () => {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            {/* <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="bg-gradient-primary hover:opacity-90 shadow-medium text-lg px-8 py-4">
                 Comenzar Evaluación
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -67,7 +67,7 @@ const Hero = () => {
               <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground text-lg px-8 py-4">
                 Ver Demo
               </Button>
-            </div>
+            </div> */}
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 pt-8">
