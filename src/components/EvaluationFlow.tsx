@@ -18,6 +18,9 @@ const EvaluationFlow = () => {
     ruc: "",
     industry: "",
     socialMedia: "",
+    facebookPageId: "",
+    twitterProfile: "", // <-- Añade esta línea
+    tweetId: "",        // <-- Añade esta línea
     files: [] as File[]
   });
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -55,7 +58,7 @@ const EvaluationFlow = () => {
     const bonuses = [
       formData.companyName ? 5 : 0,
       formData.ruc ? 5 : 0,
-      formData.files.length > 0 ? 15 : 0,
+      formData.files.length > 0 ? 10 : 0,
       formData.socialMedia ? 10 : 0,
     ];
     
@@ -66,7 +69,7 @@ const EvaluationFlow = () => {
     
     toast({
       title: "Evaluación Completada",
-      description: `Score generado: ${finalScore}/100`,
+      description: 'Score generado: ${finalScore}/100',
     });
   };
 
@@ -92,9 +95,9 @@ const EvaluationFlow = () => {
     // Datos principales
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
-    doc.text(`RUC: ${formData.ruc || "No especificado"}`, 12, 38);
-    doc.text(`Industria: ${formData.industry || "No especificado"}`, 12, 46);
-    doc.text(`Red Social: ${formData.socialMedia || "No especificado"}`, 12, 54);
+    doc.text('RUC: ${formData.ruc || "No especificado"}', 12, 38);
+    doc.text('Industria: ${formData.industry || "No especificado"}', 12, 46);
+    doc.text('Red Social: ${formData.socialMedia || "No especificado"}', 12, 54);
 
     // Score y riesgo
     const score = evaluationResult ?? 0;
@@ -107,7 +110,7 @@ const EvaluationFlow = () => {
     doc.circle(180, 45, 18, "S");
     doc.setFontSize(22);
     doc.setTextColor(colorRiesgo);
-    doc.text(`${score}`, 180, 50, { align: "center" });
+    doc.text('${score}', 180, 50, { align: "center" });
     doc.setFontSize(10);
     doc.text("SCORE", 180, 58, { align: "center" });
     doc.setFontSize(12);
@@ -116,7 +119,7 @@ const EvaluationFlow = () => {
     // Riesgo
     doc.setFontSize(14);
     doc.setTextColor(colorRiesgo);
-    doc.text(`RIESGO ${riesgo}`, 12, 70);
+    doc.text('RIESGO ${riesgo}', 12, 70);
     doc.setTextColor(0, 0, 0);
 
     // Indicadores principales (como tarjetas)
@@ -163,7 +166,7 @@ const EvaluationFlow = () => {
 
     indicadores.forEach((ind, i) => {
       doc.setFontSize(10);
-      doc.text(`${ind.nombre}: ${ind.valor}%`, 15, y + i * 8);
+      doc.text('${ind.nombre}: ${ind.valor}%', 15, y + i * 8);
       // Barra
       doc.setFillColor(azul);
       doc.rect(45, y - 3 + i * 8, ind.valor * 1.2, 5, "F");
@@ -191,9 +194,9 @@ const EvaluationFlow = () => {
     doc.setFontSize(12);
     doc.text('Simulador "¿Qué pasaría si...?"', 12, y);
     doc.setFontSize(10);
-    doc.text(`Si aumenta ventas 20%: ${score + 6} (+6)`, 15, y + 8);
-    doc.text(`Si mejora reputación digital: ${score + 3} (+3)`, 15, y + 16);
-    doc.text(`Si reduce deudas 30%: ${score + 8} (+8)`, 15, y + 24);
+    doc.text('Si aumenta ventas 20%: ${score + 6} (+6)', 15, y + 8);
+    doc.text('Si mejora reputación digital: ${score + 3} (+3)', 15, y + 16);
+    doc.text('Si reduce deudas 30%: ${score + 8} (+8)', 15, y + 24);
 
     // Documentos cargados
     y += 34;
@@ -202,7 +205,7 @@ const EvaluationFlow = () => {
     doc.setFontSize(10);
     if (formData.files.length > 0) {
       formData.files.forEach((file, idx) => {
-        doc.text(`• ${file.name}`, 15, y + 8 + idx * 6);
+        doc.text('• ${file.name}', 15, y + 8 + idx * 6);
       });
     } else {
       doc.text("No se han subido documentos.", 15, y + 8);
@@ -213,7 +216,7 @@ const EvaluationFlow = () => {
     doc.setTextColor(150);
     doc.text("Reporte generado automáticamente por Evaluapy", 12, 290);
 
-    doc.save(`reporte_${formData.companyName || "empresa"}.pdf`);
+    doc.save('reporte_${formData.companyName || "empresa"}.pdf');
   };
 
   const renderStepContent = () => {
@@ -308,7 +311,6 @@ const EvaluationFlow = () => {
               <h2 className="text-2xl font-bold">Presencia Digital</h2>
               <p className="text-muted-foreground">Enlaces a redes sociales para análisis de reputación</p>
             </div>
-            
             <div className="space-y-4">
               <div>
                 <Label htmlFor="socialMedia">URL Red Social Principal</Label>
@@ -323,8 +325,47 @@ const EvaluationFlow = () => {
                   Facebook, Instagram, LinkedIn o sitio web oficial
                 </p>
               </div>
+              <div>
+                <Label htmlFor="facebookPageId">ID de Página de Facebook</Label>
+                <Input
+                  id="facebookPageId"
+                  value={formData.facebookPageId || ""}
+                  onChange={(e) => setFormData({...formData, facebookPageId: e.target.value})}
+                  placeholder="Ej: 161449100569258"
+                  className="mt-1"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Puedes encontrarlo en la sección de transparencia de la página de Facebook.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="twitterProfile">URL Perfil X (Twitter)</Label>
+                <Input
+                  id="twitterProfile"
+                  value={formData.twitterProfile || ""}
+                  onChange={(e) => setFormData({ ...formData, twitterProfile: e.target.value })}
+                  placeholder="https://x.com/empresa"
+                  className="mt-1"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Ingresa el enlace al perfil de X (Twitter) de la empresa.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="tweetId">ID del Tweet</Label>
+                <Input
+                  id="tweetId"
+                  value={formData.tweetId || ""}
+                  onChange={(e) => setFormData({ ...formData, tweetId: e.target.value })}
+                  placeholder="Ej: 1234567890123456789"
+                  className="mt-1"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Ingresa el ID del tweet para analizar los comentarios (replies).
+                </p>
+              </div>
+              
             </div>
-            
             <Card className="p-4 bg-primary/5 border-primary/20">
               <h4 className="font-medium mb-2">¿Por qué analizamos redes sociales?</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
@@ -480,19 +521,19 @@ const EvaluationFlow = () => {
           <div className="col-span-1 bg-white rounded-lg p-4 flex flex-col justify-between shadow-sm">
             <div className="flex items-center text-blue-600 font-bold text-xl">${ventas.toLocaleString()}</div>
             <div className="text-xs text-muted-foreground">Ventas Mensuales</div>
-            <div className="text-green-500 text-xs mt-1">{variacionVentas > 0 ? `▲ +${variacionVentas}%` : `▼ ${variacionVentas}%`}</div>
+            <div className="text-green-500 text-xs mt-1">{variacionVentas > 0 ? '▲ +${variacionVentas}%' : '▼ ${variacionVentas}%'}</div>
           </div>
           <div className="col-span-1 bg-white rounded-lg p-4 flex flex-col justify-between shadow-sm">
             <div className="flex items-center font-bold text-xl">{liquidez}%</div>
             <div className="text-xs text-muted-foreground">Liquidez</div>
-            <div className={`${variacionLiquidez > 0 ? "text-green-500" : "text-red-500"} text-xs mt-1`}>
-              {variacionLiquidez > 0 ? `▲ +${variacionLiquidez}%` : `▼ ${Math.abs(variacionLiquidez)}%`}
+            <div className={'${variacionLiquidez > 0 ? "text-green-500" : "text-red-500"} text-xs mt-1'}>
+              {variacionLiquidez > 0 ? '▲ +${variacionLiquidez}%' : '▼ ${Math.abs(variacionLiquidez)}%'}
             </div>
           </div>
           <div className="col-span-1 bg-white rounded-lg p-4 flex flex-col justify-between shadow-sm">
             <div className="flex items-center font-bold text-xl">{clientesActivos}</div>
             <div className="text-xs text-muted-foreground">Clientes Activos</div>
-            <div className="text-green-500 text-xs mt-1">{variacionClientes > 0 ? `▲ +${variacionClientes}%` : `▼ ${variacionClientes}%`}</div>
+            <div className="text-green-500 text-xs mt-1">{variacionClientes > 0 ? '▲ +${variacionClientes}%' : '▼ ${variacionClientes}%'}</div>
           </div>
         </div>
         {/* Indicadores Financieros */}
@@ -508,19 +549,19 @@ const EvaluationFlow = () => {
             <div>
               <div className="text-xs text-muted-foreground mb-1">Liquidez</div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${liquidez}%` }} />
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '${liquidez}%' }} />
               </div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground mb-1">Rentabilidad</div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${rentabilidad}%` }} />
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '${rentabilidad}%' }} />
               </div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground mb-1">Reputación Digital</div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${reputacionDigital}%` }} />
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '${reputacionDigital}%' }} />
               </div>
             </div>
           </div>
@@ -616,3 +657,14 @@ const EvaluationFlow = () => {
 };
 
 export default EvaluationFlow;
+
+// Ejemplo de llamada desde React
+const predictFinanzas = async (features: number[]) => {
+  const res = await fetch("/api/predict", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ features })
+  });
+  const data = await res.json();
+  return data.prediction;
+};

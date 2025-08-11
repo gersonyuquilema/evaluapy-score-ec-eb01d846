@@ -1,0 +1,102 @@
+# Importar librerías
+import pandas as pd
+import numpy as np
+import torch
+from transformers import AutoTokenizer, AutoModel
+import lightgbm as lgb
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from google.colab import files      # Función para subir y cargar archivo txt balances
+
+# Función corregida para leer archivos .txt con manejo de líneas malas
+def load_balances_txt(file_path):
+    try:
+        df = pd.read_csv(file_path, delimiter='\t', encoding='utf-8', on_bad_lines='skip')
+    except Exception as e:
+        print(f"Error leyendo con tabuladores: {e}, intentando con coma")
+        df = pd.read_csv(file_path, delimiter=',', encoding='utf-8', on_bad_lines='skip')
+    return df
+
+# Función para subir archivos
+def upload_file(prompt):
+    print(prompt)
+    uploaded = files.upload()
+    for fname in uploaded.keys():
+        print(f"Cargado archivo: {fname}")
+        return fname # Cargar archivos
+
+# Subir archivos
+balances_file = upload_file("Sube el archivo de balances (.txt):")
+referencias_file = upload_file("Sube el archivo de referencias (.csv):")
+datos_digitales_file = upload_file("Sube el archivo de datos digitales (.csv):")
+
+# Cargar datos en DataFrames
+balances = load_balances_txt(balances_file)
+referencias = pd.read_csv(referencias_file)
+datos_digitales = pd.read_csv(datos_digitales_file)
+
+# RUC objetivo para filtrar datos (ajusta según tu caso)
+ruc_objetivo = '1790008959001'
+
+balances_empresa = balances[balances['ruc'] == ruc_objetivo]
+referencias_empresa = referencias[referencias['ruc'] == ruc_objetivo]
+datos_digitales_empresa = datos_digitales[datos_digitales['ruc'] == ruc_objetivo]
+
+# Combinar datos por 'ruc' (ajustar columnas según estructura)
+df = balances_empresa.merge(referencias_empresa, on='ruc', how='left')
+df = df.merge(datos_digitales_empresa, on='ruc', how='left')
+
+print("Datos combinados:", df.shape) 
+
+# --- Embeddings FinBERT para texto financiero ---
+tokenizer = AutoTokenizer.from_pretrained('yiyanghkust/finbert-tone')
+model = AutoModel.from_pretrained('yiyanghkust/finbert-tone')
+
+def get_finbert_embedding(text):
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    embeddings = outputs.last_hidden_state.mean(dim=1).squeeze().numpy()
+    return embeddings
+
+# Asegúrate que tienes columna de texto financiero, ejemplo: 'texto_financiero'
+if 'texto_financiero' not in df.columns:
+    df['texto_financiero'] = ''
+
+embeddings = np.vstack(df['texto_financiero'].fillna('').apply(get_finbert_embedding).values)
+
+# Preparar datos para entrenamiento LightGBM
+# Quitar columnas no numéricas y que no usaremos para entrenamiento
+cols_drop = ['ruc', 'texto_financiero']
+if 'label' not in df.columns:
+    print("No se encontró columna 'label' para supervisión. Debes agregarla.")
+else:
+    X_tabular = df.drop(columns=cols_drop + ['label'], errors='ignore').fillna(0)
+    X_combined = np.hstack([X_tabular.values, embeddings])
+    y = df['label'].values
+
+    # División de datos
+    X_train, X_test, y_train, y_test = train_test_split(X_combined, y, test_size=0.2, random_state=42)
+
+    # Crear datasets LightGBM
+    train_data = lgb.Dataset(X_train, label=y_train)
+    valid_data = lgb.Dataset(X_test, label=y_test)
+
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'device': 'gpu',  # Si no tienes GPU en Colab cambia a 'cpu'
+        'verbose': -1
+    }
+
+    print("Entrenando LightGBM...")
+    model_lgb = lgb.train(params, train_data, valid_sets=[valid_data], num_boost_round=1000, early_stopping_rounds=50)
+
+    y_pred = (model_lgb.predict(X_test) > 0.5).astype(int)
+    acc = accuracy_score(y_test, y_pred)
+    print(f"Accuracy en test: {acc:.4f}")
+
+    # Guardar modelo entrenado
+    import joblib
+    joblib.dump(model_lgb, 'modelo_lgb_finanzas.pkl')
+    print("Modelo guardado como 'modelo_lgb_finanzas.pkl'")
